@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connect Four Solver</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔴 Connect Four Solver</h1>
+            <p>Play against the optimal AI or challenge a friend!</p>
+        </div>
+
+        <div class="main-content">
+            <div class="game-board-section">
+                <div class="game-setup">
+                    <h3>Game Setup</h3>
+                    <div class="setup-row">
+                        <label for="height">Board Height:</label>
+                        <input type="number" id="height" min="4" max="10" value="6">
+                    </div>
+                    <div class="setup-row">
+                        <label for="width">Board Width:</label>
+                        <input type="number" id="width" min="4" max="10" value="7">
+                    </div>
+                    <div class="setup-row">
+                        <label for="win">Tokens to Win:</label>
+                        <input type="number" id="win" min="3" max="6" value="4">
+                    </div>
+                    <button class="btn btn-primary" onclick="createNewBoard()">Create New Board</button>
+                </div>
+
+                <div class="error-message" id="errorMessage"></div>
+                <div class="success-message" id="successMessage"></div>
+
+                <div class="game-status status-playing" id="gameStatus">
+                    Player 1's Turn (Red) - Click a column or use AI
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>AI is thinking...</p>
+                </div>
+
+                <div class="game-board">
+                    <div class="column-headers" id="columnHeaders"></div>
+                    <div class="board-grid" id="boardGrid"></div>
+                </div>
+            </div>
+
+            <div class="controls-section">
+                <div class="controls">
+                    <h3>Game Controls</h3>
+                    <div class="button-group">
+                        <button class="btn btn-success" onclick="getAIMove()">🤖 AI Move</button>
+                        <button class="btn btn-warning" onclick="undoMove()">↶ Undo Move</button>
+                        <button class="btn btn-secondary" onclick="resetGame()">🔄 Reset Game</button>
+                        <button class="btn btn-danger" onclick="createNewBoard()">🎮 New Game</button>
+                    </div>
+                </div>
+
+                <div class="controls" style="margin-top: 20px;">
+                    <h3>How to Play</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 10px;">🔴 <strong>Player 1:</strong> Red tokens (+)</li>
+                        <li style="margin-bottom: 10px;">🟡 <strong>Player 2:</strong> Yellow tokens (-)</li>
+                        <li style="margin-bottom: 10px;">🎯 <strong>Goal:</strong> Connect tokens in a row</li>
+                        <li style="margin-bottom: 10px;">🤖 <strong>AI:</strong> Uses minimax algorithm</li>
+                        <li style="margin-bottom: 10px;">↶ <strong>Undo:</strong> Take back moves</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
