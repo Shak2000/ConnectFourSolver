@@ -135,15 +135,12 @@ class ConnectFourSolver:
 
     def minimax(self, board, depth, maximizing_player, alpha=float('-inf'), beta=float('inf')):
         """Minimax algorithm with alpha-beta pruning"""
-        # Check if game is over
+        # Check if game is over or max depth reached
         valid_moves = board.get_valid_moves()
-        if not valid_moves or depth == 0:
-            return self.evaluate_board(board), None
 
-        # Check if last move resulted in a win
-        if depth < self.max_depth:  # Only check if we made a move
-            if board.is_board_full():
-                return 0, None
+        # Base cases
+        if depth == 0 or not valid_moves or board.is_board_full():
+            return self.evaluate_board(board), None
 
         best_move = None
 
@@ -153,8 +150,10 @@ class ConnectFourSolver:
                 board_copy = board.copy()
                 result = board_copy.make_move(move)
 
-                if result is not None:  # Game ended
-                    eval_score = result
+                if result is not None:  # Game ended with this move
+                    eval_score = result * 1000  # High value for immediate win/loss
+                    if result == 1:  # Maximizing player wins
+                        return eval_score, move
                 else:
                     eval_score, _ = self.minimax(board_copy, depth - 1, False, alpha, beta)
 
@@ -173,8 +172,10 @@ class ConnectFourSolver:
                 board_copy = board.copy()
                 result = board_copy.make_move(move)
 
-                if result is not None:  # Game ended
-                    eval_score = result
+                if result is not None:  # Game ended with this move
+                    eval_score = result * 1000  # High value for immediate win/loss
+                    if result == -1:  # Minimizing player wins
+                        return eval_score, move
                 else:
                     eval_score, _ = self.minimax(board_copy, depth - 1, True, alpha, beta)
 
@@ -189,54 +190,94 @@ class ConnectFourSolver:
             return min_eval, best_move
 
     def evaluate_board(self, board):
-        """Simple board evaluation function"""
-        # Count potential wins for each player
+        """Improved board evaluation function"""
         score = 0
 
-        # Check all positions for potential wins
+        # Check all possible windows of size 'win'
+        # Horizontal
         for r in range(board.height):
+            for c in range(board.width - board.win + 1):
+                window = [board.board[r][c + i] for i in range(board.win)]
+                score += self.evaluate_window(window)
+
+        # Vertical
+        for r in range(board.height - board.win + 1):
             for c in range(board.width):
-                if board.board[r][c] != ".":
-                    # Add points based on how many in a row this position contributes to
-                    directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
-                    for dr, dc in directions:
-                        line_score = self.evaluate_line(board, r, c, dr, dc)
-                        if board.board[r][c] == "+":
-                            score += line_score
-                        else:
-                            score -= line_score
+                window = [board.board[r + i][c] for i in range(board.win)]
+                score += self.evaluate_window(window)
+
+        # Positive diagonal
+        for r in range(board.height - board.win + 1):
+            for c in range(board.width - board.win + 1):
+                window = [board.board[r + i][c + i] for i in range(board.win)]
+                score += self.evaluate_window(window)
+
+        # Negative diagonal
+        for r in range(board.win - 1, board.height):
+            for c in range(board.width - board.win + 1):
+                window = [board.board[r - i][c + i] for i in range(board.win)]
+                score += self.evaluate_window(window)
 
         return score
 
-    def evaluate_line(self, board, r, c, dr, dc):
-        """Evaluate a line starting from (r,c) in direction (dr,dc)"""
-        token = board.board[r][c]
-        count = 0
-        empty = 0
+    def evaluate_window(self, window):
+        """Evaluate a window of 4 positions"""
+        score = 0
+        plus_count = window.count('+')
+        minus_count = window.count('-')
+        empty_count = window.count('.')
 
-        # Count in positive direction
-        nr, nc = r, c
-        for _ in range(board.win):
-            if 0 <= nr < board.height and 0 <= nc < board.width:
-                if board.board[nr][nc] == token:
-                    count += 1
-                elif board.board[nr][nc] == ".":
-                    empty += 1
-                else:
-                    return 0  # Blocked by opponent
-            else:
-                return 0  # Out of bounds
-            nr += dr
-            nc += dc
+        # If both players have pieces in the window, it's not useful
+        if plus_count > 0 and minus_count > 0:
+            return 0
 
-        if count + empty >= board.win:
-            return count ** 2
-        return 0
+        # Score for + player
+        if plus_count > 0:
+            if plus_count == 4:
+                score += 1000
+            elif plus_count == 3 and empty_count == 1:
+                score += 50
+            elif plus_count == 2 and empty_count == 2:
+                score += 10
+            elif plus_count == 1 and empty_count == 3:
+                score += 1
+
+        # Score for - player
+        if minus_count > 0:
+            if minus_count == 4:
+                score -= 1000
+            elif minus_count == 3 and empty_count == 1:
+                score -= 50
+            elif minus_count == 2 and empty_count == 2:
+                score -= 10
+            elif minus_count == 1 and empty_count == 3:
+                score -= 1
+
+        return score
 
     def get_best_move(self):
         """Get the best move using minimax algorithm"""
+        # First check for immediate winning moves or blocks
+        valid_moves = self.board.get_valid_moves()
+
+        # Check for immediate winning move
+        for move in valid_moves:
+            board_copy = self.board.copy()
+            result = board_copy.make_move(move)
+            if result == self.board.player:  # Current player wins
+                return move
+
+        # Check for moves that block opponent from winning
+        for move in valid_moves:
+            board_copy = self.board.copy()
+            board_copy.player *= -1  # Switch to opponent
+            result = board_copy.make_move(move)
+            if result == board_copy.player:  # Opponent would win
+                return move  # Block this move
+
+        # Use minimax for best strategic move
         _, best_move = self.minimax(self.board, self.max_depth, self.board.player == 1)
-        return best_move
+        return best_move if best_move is not None else valid_moves[0]
 
     def play_again(self):
         """Ask if user wants to play again"""
